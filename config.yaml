@@ -97,7 +97,7 @@ training:
 
 distillation:
   enabled: true
-  teacher_model: "us.anthropic.claude-3-5-haiku-20241022-v1:0"  # Bedrock inference profile
+  teacher_model: "us.anthropic.claude-sonnet-4-5-20250929-v1:0"  # Claude Sonnet 4.5 (latest)
   teacher_provider: "bedrock"  # Use Amazon Bedrock
 
   # Distillation hyperparameters
@@ -176,7 +176,7 @@ aws:
 
   # Amazon Bedrock for teacher model
   bedrock:
-    model_id: "us.anthropic.claude-3-5-haiku-20241022-v1:0"  # Inference profile
+    model_id: "us.anthropic.claude-sonnet-4-5-20250929-v1:0"  # Claude Sonnet 4.5 (latest)
     max_tokens: 2048
     temperature: 0.7
 
@@ -220,7 +220,7 @@ evaluation:
       description: "Generate CARLA sensor data processing code"
 
   # Claude evaluation settings
-  evaluation_model: "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+  evaluation_model: "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
   evaluation_temperature: 0.3
   min_acceptable_score: 7
 

@@ -47,7 +47,7 @@ class BedrockTeacherGenerator:
 
     def __init__(
         self,
-        model_id: str = "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+        model_id: str = "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
         region: str = "us-east-1",
         max_tokens: int = 2048,
         temperature: float = 0.7,
@@ -298,8 +298,8 @@ def main():
     parser.add_argument(
         '--model-id',
         type=str,
-        default='us.anthropic.claude-3-5-haiku-20241022-v1:0',
-        help='Bedrock inference profile ID'
+        default='us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+        help='Bedrock inference profile ID (default: Claude Sonnet 4.5)'
     )
     parser.add_argument(
         '--region',
