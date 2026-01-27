@@ -43,6 +43,10 @@ class BedrockTeacherGenerator:
 
     Uses Claude Sonnet for high-quality automotive code generation
     with automatic rate limiting and retry logic.
+
+    Authentication:
+    - Primary: AWS IAM credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+    - Secondary: Bedrock API Key (AMAZON_BEDROCK_MODEL_API_KEY) for additional auth
     """
 
     def __init__(
@@ -53,12 +57,16 @@ class BedrockTeacherGenerator:
         temperature: float = 0.7,
         max_retries: int = 5,
         base_delay: float = 1.0,
+        api_key: Optional[str] = None,
     ):
         self.model_id = model_id
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.max_retries = max_retries
         self.base_delay = base_delay
+
+        # Get Bedrock API key from parameter or environment
+        self.api_key = api_key or os.environ.get('AMAZON_BEDROCK_MODEL_API_KEY')
 
         # Configure boto3 with retry settings
         config = Config(
@@ -70,9 +78,24 @@ class BedrockTeacherGenerator:
         )
 
         self.client = boto3.client('bedrock-runtime', config=config)
+
+        # Register event handler to add API key header if available
+        if self.api_key:
+            self.client.meta.events.register(
+                'before-send.bedrock-runtime.*',
+                self._add_api_key_header
+            )
+            print(f"[Bedrock] API Key authentication: ENABLED")
+
         print(f"[Bedrock] Initialized with model: {model_id}")
         print(f"[Bedrock] Region: {region}")
         print(f"[Bedrock] Max tokens: {max_tokens}")
+        print(f"[Bedrock] IAM credentials: {os.environ.get('AWS_ACCESS_KEY_ID', 'N/A')[:10]}...")
+
+    def _add_api_key_header(self, request, **kwargs):
+        """Add Bedrock API key to request headers for additional authentication"""
+        if self.api_key:
+            request.headers['x-amz-bedrock-api-key'] = self.api_key
 
     def generate_response(
         self,

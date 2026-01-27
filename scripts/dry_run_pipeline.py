@@ -132,7 +132,7 @@ class PipelineValidator:
             return False
 
     def test_bedrock_access(self) -> bool:
-        """Test Amazon Bedrock access"""
+        """Test Amazon Bedrock access with both IAM and API key authentication"""
         print("\n" + "="*60)
         print("Testing Amazon Bedrock Access")
         print("="*60)
@@ -140,11 +140,34 @@ class PipelineValidator:
         region = self.config.get('aws', {}).get('region', 'us-east-1')
         model_id = self.config.get('distillation', {}).get(
             'teacher_model',
-            'anthropic.claude-3-5-sonnet-20241022-v2:0'
+            'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
         )
+
+        # Get Bedrock API key from environment
+        api_key = os.environ.get('AMAZON_BEDROCK_MODEL_API_KEY')
 
         try:
             bedrock = boto3.client('bedrock-runtime', region_name=region)
+
+            # Register API key header if available
+            if api_key:
+                def add_api_key_header(request, **kwargs):
+                    request.headers['x-amz-bedrock-api-key'] = api_key
+                bedrock.meta.events.register(
+                    'before-send.bedrock-runtime.*',
+                    add_api_key_header
+                )
+                self._log_result(
+                    "Bedrock API Key",
+                    True,
+                    f"API key configured: {api_key[:20]}..."
+                )
+            else:
+                self._log_result(
+                    "Bedrock API Key",
+                    False,
+                    "AMAZON_BEDROCK_MODEL_API_KEY not set in .env"
+                )
 
             # Simple test prompt
             test_prompt = "Say 'Hello' in one word."
