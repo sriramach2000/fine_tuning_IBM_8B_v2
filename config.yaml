@@ -1,0 +1,246 @@
+# ============================================================================
+# Granite-8B Fine-Tuning Configuration for Embedded Automotive Code Generation
+# ============================================================================
+# Target: AVB (Audio Video Bridging) and TSN (Time-Sensitive Networking)
+# ============================================================================
+
+project:
+  name: granite-8b-avb-tsn-finetuning
+  version: "1.0.0"
+  environment: development
+  description: "Fine-tuning IBM Granite-8B for embedded automotive code generation"
+
+# ============================================================================
+# Paths
+# ============================================================================
+
+paths:
+  data:
+    s3_bucket: "granite-8b-unified-automotive-data"
+    s3_prefix: ""
+    processed_dir: "./data/processed"
+    splits_dir: "./data/splits"
+    teacher_outputs_dir: "./data/teacher_outputs"
+    distillation_dir: "./data/distillation"
+  training:
+    output_dir: "./models/granite-8b-finetuned"
+    checkpoint_dir: "./models/checkpoints"
+    logs_dir: "./logs"
+
+# ============================================================================
+# Model Configuration - IBM Granite-8B Code
+# ============================================================================
+
+model:
+  name: "ibm-granite/granite-8b-code-instruct-128k"
+  context_length: 131072  # 128K context
+  max_seq_length: 4096    # Training sequence length
+  trust_remote_code: false  # Granite doesn't need this
+
+# ============================================================================
+# QLoRA Configuration
+# ============================================================================
+
+qlora:
+  # Quantization
+  load_in_4bit: true
+  bnb_4bit_use_double_quant: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_compute_dtype: "bfloat16"  # BF16 recommended for Granite
+
+  # LoRA - Optimized for 8B model
+  lora_r: 32              # Rank (increased for 8B model capacity)
+  lora_alpha: 64          # Scaling factor (2x rank)
+  lora_dropout: 0.05
+  lora_target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+# ============================================================================
+# Training Configuration
+# ============================================================================
+
+training:
+  num_epochs: 5
+  per_device_train_batch_size: 2      # Reduced for 8B model
+  gradient_accumulation_steps: 8      # Effective batch size = 16
+  learning_rate: 1.0e-4               # Recommended for Granite fine-tuning
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  weight_decay: 0.01
+  max_grad_norm: 0.3
+
+  # Optimization
+  optim: "paged_adamw_8bit"
+  gradient_checkpointing: true
+  bf16: true  # Use BF16 for Granite
+
+  # Logging
+  logging_steps: 10
+  eval_steps: 50
+  save_steps: 100
+  save_strategy: "steps"
+  evaluation_strategy: "steps"
+
+  # Early stopping
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.0
+
+# ============================================================================
+# Knowledge Distillation Configuration (Amazon Bedrock)
+# ============================================================================
+
+distillation:
+  enabled: true
+  teacher_model: "anthropic.claude-3-5-sonnet-20241022-v2:0"  # Bedrock model ID
+  teacher_provider: "bedrock"  # Use Amazon Bedrock
+
+  # Distillation hyperparameters
+  temperature: 2.0        # Softening factor for response generation
+  alpha: 0.7              # Weight for distillation loss vs ground truth
+
+  # Response generation settings
+  max_teacher_tokens: 2048
+  batch_size: 50          # Prompts per batch
+
+  # Convergence settings
+  min_score_threshold: 7
+  convergence_threshold: 8.0
+  max_iterations: 5
+
+# ============================================================================
+# Automotive Data Configuration
+# ============================================================================
+
+automotive_data:
+  s3_source: "arn:aws:s3:::granite-8b-unified-automotive-data"
+
+  data_types:
+    - name: "tsn"
+      description: "Time-Sensitive Networking protocols"
+      prefix: "tsn_data/"
+    - name: "avb"
+      description: "Audio Video Bridging protocols"
+      prefix: "avb_data/"
+    - name: "carla"
+      description: "CARLA autonomous driving simulator C++ code"
+      prefix: "advanced_academic/carla_autonomous_driving_simulator/"
+    - name: "augmented"
+      description: "Enhanced codebase with documentation"
+      prefix: "tsn_data/augmented_codebase/"
+
+  # Prompt generation settings
+  prompts_per_type: 2500  # 10K total prompts for distillation
+  min_code_length: 50
+  max_code_length: 4000
+
+# ============================================================================
+# AWS SageMaker Configuration
+# ============================================================================
+
+aws:
+  region: "us-east-1"
+  account_id: "122634724608"
+
+  s3:
+    bucket_name: "granite-8b-unified-automotive-data"
+    data_prefix: "data"
+    model_prefix: "models"
+    logs_prefix: "logs"
+
+  iam:
+    role_name: "SageMakerGranite8BFineTuningRole"
+
+  ecr:
+    repository_name: "granite-8b-finetuning"
+
+  processing_job:
+    instance_type: "ml.m5.xlarge"
+    instance_count: 1
+    volume_size_gb: 50
+    max_runtime_seconds: 7200
+
+  training_job:
+    instance_type: "ml.p4d.24xlarge"  # 8x A100 GPUs for 8B model
+    # Alternative: "ml.g5.12xlarge" (4x A10G) for cost savings
+    instance_count: 1
+    volume_size_gb: 200
+    max_runtime_seconds: 28800  # 8 hours
+    use_spot_instances: true
+    max_wait_seconds: 36000
+
+  # Amazon Bedrock for teacher model
+  bedrock:
+    model_id: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    max_tokens: 2048
+    temperature: 0.7
+
+# ============================================================================
+# Dataset Configuration
+# ============================================================================
+
+dataset:
+  train_split: 0.9
+  val_split: 0.1
+  test_split: 0.0
+  seed: 42
+
+  # Automotive code patterns
+  code_patterns:
+    - "tsn_frame"
+    - "avb_stream"
+    - "ethernet_packet"
+    - "time_sync"
+    - "scheduler"
+
+# ============================================================================
+# Evaluation Configuration
+# ============================================================================
+
+evaluation:
+  metrics:
+    - "perplexity"
+    - "code_compilation_rate"
+    - "tsn_compliance_score"
+    - "avb_protocol_accuracy"
+    - "bleu"
+    - "exact_match"
+
+  automotive_benchmarks:
+    - name: "tsn_frame_generation"
+      description: "Generate TSN Time-Aware Shaper code"
+    - name: "avb_stream_reservation"
+      description: "Generate AVB Stream Reservation Protocol code"
+    - name: "carla_sensor_processing"
+      description: "Generate CARLA sensor data processing code"
+
+  # Claude evaluation settings
+  evaluation_model: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+  evaluation_temperature: 0.3
+  min_acceptable_score: 7
+
+# ============================================================================
+# Monitoring Configuration
+# ============================================================================
+
+monitoring:
+  cloudwatch:
+    enabled: true
+    namespace: "Granite8BFineTuning"
+    log_group: "/aws/sagemaker/granite-8b-avb-tsn"
+
+  metrics:
+    - name: "TrainingLoss"
+      threshold: 2.0
+      comparison: "LessThanThreshold"
+    - name: "EvalLoss"
+      threshold: 2.5
+      comparison: "LessThanThreshold"
+
+  alerts:
+    email: "admin@example.com"

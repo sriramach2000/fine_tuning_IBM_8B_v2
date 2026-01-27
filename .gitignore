@@ -1,0 +1,86 @@
+# ============================================================================
+# Git Ignore for Granite-8B Fine-Tuning Project
+# ============================================================================
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Data and models (large files)
+data/raw/
+data/processed/
+data/teacher_outputs/
+data/splits/*.jsonl
+models/
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+
+# Logs and caches
+logs/
+*.log
+.cache/
+.docker_cache/
+.docker_logs/
+.docker_checkpoints/
+
+# AWS
+.aws/
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test results
+.docker_test_results/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
