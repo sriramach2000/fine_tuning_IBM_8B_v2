@@ -189,35 +189,40 @@ class BedrockTeacherGenerator:
         prompts: List[Dict],
         system_prompt: Optional[str] = None,
         output_file: Optional[str] = None,
-        checkpoint_interval: int = 10
+        checkpoint_interval: int = 10,
+        max_workers: int = 10
     ) -> List[Dict]:
         """
-        Generate responses for a batch of prompts.
+        Generate responses for a batch of prompts with parallel processing.
 
         Args:
             prompts: List of dicts with 'id' and 'prompt' fields
             system_prompt: Optional system prompt
             output_file: Optional file to save results incrementally
             checkpoint_interval: Save checkpoint every N prompts
+            max_workers: Number of parallel workers (default: 10, max recommended: 50)
 
         Returns:
             List of results with prompt, response, and metadata
         """
         results = []
         failed_count = 0
+        results_lock = __import__('threading').Lock()
 
-        print(f"\n[Bedrock] Processing {len(prompts)} prompts...")
+        print(f"\n[Bedrock] Processing {len(prompts)} prompts with {max_workers} parallel workers...")
+        print(f"[Bedrock] Estimated time: ~{len(prompts) / max_workers / 60 * 3:.1f} minutes")
 
-        for i, prompt_data in enumerate(tqdm(prompts, desc="Generating")):
-            prompt_id = prompt_data.get('id', i)
+        def process_prompt(prompt_data, idx):
+            """Process a single prompt"""
+            prompt_id = prompt_data.get('id', idx)
             prompt_text = prompt_data.get('prompt', '')
 
             if not prompt_text:
-                continue
+                return None
 
             result = self.generate_response(prompt_text, system_prompt)
 
-            output = {
+            return {
                 'id': prompt_id,
                 'prompt': prompt_text,
                 'response': result.get('response'),
@@ -227,17 +232,29 @@ class BedrockTeacherGenerator:
                 'timestamp': datetime.now().isoformat()
             }
 
-            results.append(output)
+        # Process in parallel using ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(process_prompt, prompt_data, i): i
+                for i, prompt_data in enumerate(prompts)
+            }
 
-            if not result['success']:
-                failed_count += 1
+            completed = 0
+            for future in tqdm(as_completed(futures), total=len(prompts), desc="Generating"):
+                output = future.result()
+                if output:
+                    with results_lock:
+                        results.append(output)
+                        if not output['success']:
+                            failed_count += 1
+                        completed += 1
 
-            # Checkpoint save
-            if output_file and (i + 1) % checkpoint_interval == 0:
-                self._save_checkpoint(results, output_file)
+                        # Checkpoint save
+                        if output_file and completed % checkpoint_interval == 0:
+                            self._save_checkpoint(results, output_file)
 
-            # Small delay to avoid rate limits
-            time.sleep(0.1)
+        # Sort results by ID to maintain order
+        results.sort(key=lambda x: str(x['id']))
 
         # Final save
         if output_file:
@@ -353,6 +370,12 @@ def main():
         default=5,
         help='Number of test prompts (with --test-mode)'
     )
+    parser.add_argument(
+        '--workers',
+        type=int,
+        default=10,
+        help='Number of parallel workers (default: 10, max recommended: 50)'
+    )
 
     args = parser.parse_args()
 
@@ -390,7 +413,8 @@ def main():
         prompts=prompts,
         system_prompt=system_prompt,
         output_file=args.output_file,
-        checkpoint_interval=10
+        checkpoint_interval=10,
+        max_workers=args.workers
     )
 
     # Print summary
