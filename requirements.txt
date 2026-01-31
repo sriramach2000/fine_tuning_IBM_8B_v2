@@ -55,3 +55,11 @@ flake8>=6.1.0
 # Optional: Jupyter for notebooks
 # jupyter>=1.0.0
 # ipykernel>=6.25.0
+
+# ============================================================================
+# Context Database (Vectorized Knowledge Graph)
+# ============================================================================
+neo4j>=5.14.0
+sentence-transformers>=2.2.2
+keybert>=0.8.3
+mcp>=1.0.0

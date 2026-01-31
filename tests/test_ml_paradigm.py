@@ -92,12 +92,12 @@ class TestGradientHealth:
 
     def test_layer_wise_gradient_monitoring(self):
         """Monitor gradients per layer for imbalance detection"""
-        # Simulate layer gradients
+        # Simulate layer gradients (healthy model - gradients decrease but not drastically)
         layer_grads = {
             'layer_0': np.array([0.1, 0.1, 0.1]),
             'layer_5': np.array([0.05, 0.05, 0.05]),
-            'layer_10': np.array([0.01, 0.01, 0.01]),
-            'layer_15': np.array([0.001, 0.001, 0.001]),  # Potential vanishing
+            'layer_10': np.array([0.03, 0.03, 0.03]),
+            'layer_15': np.array([0.02, 0.02, 0.02]),
         }
 
         # Calculate gradient norms per layer
@@ -110,7 +110,21 @@ class TestGradientHealth:
         if min_norm > 0:
             ratio = max_norm / min_norm
             # Flag if gradient imbalance > 100x
-            assert ratio < 100 or True  # Would fail in real scenario
+            assert ratio < 100, f"Gradient imbalance too high: {ratio:.2f}x"
+
+    def test_gradient_imbalance_detected_when_vanishing(self):
+        """Detect when layer gradient imbalance exceeds threshold"""
+        layer_grads = {
+            'layer_0': np.array([0.1, 0.1, 0.1]),
+            'layer_15': np.array([0.001, 0.001, 0.001]),  # Vanishing
+        }
+
+        norms = {k: np.linalg.norm(v) for k, v in layer_grads.items()}
+        max_norm = max(norms.values())
+        min_norm = min(norms.values())
+
+        ratio = max_norm / min_norm
+        assert ratio >= 100, "Should detect gradient imbalance"
 
     def test_gradient_accumulation_correctness(self):
         """Verify gradient accumulation sums correctly"""

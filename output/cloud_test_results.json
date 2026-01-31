@@ -1,0 +1,142 @@
+{
+  "total_tests": 13,
+  "passed": 6,
+  "failed": 7,
+  "pass_rate": 0.46153846153846156,
+  "duration_seconds": 0.725924,
+  "start_time": "2026-01-27T22:10:30.377985",
+  "end_time": "2026-01-27T22:10:31.103921",
+  "results": [
+    {
+      "name": "S3 Bucket Access",
+      "passed": true,
+      "error": null,
+      "duration_ms": 47,
+      "details": {
+        "bucket": "granite-8b-unified-automotive-data",
+        "status": "accessible"
+      }
+    },
+    {
+      "name": "S3 List Objects",
+      "passed": true,
+      "error": null,
+      "duration_ms": 19,
+      "details": {
+        "prefix": "data/",
+        "objects_found": 2,
+        "sample_keys": [
+          "data/splits/train.jsonl",
+          "data/splits/val.jsonl"
+        ]
+      }
+    },
+    {
+      "name": "S3 Read Training File",
+      "passed": false,
+      "error": "No training files found in data/processed/",
+      "duration_ms": 16,
+      "details": {
+        "traceback": "No training files found in data/processed/"
+      }
+    },
+    {
+      "name": "S3 Write Permission",
+      "passed": true,
+      "error": null,
+      "duration_ms": 78,
+      "details": {
+        "test_key": "test-outputs/cloud-test-2026-01-27T22:10:30.461499.txt",
+        "written_bytes": 33,
+        "verified": true
+      }
+    },
+    {
+      "name": "S3 Pagination",
+      "passed": true,
+      "error": null,
+      "duration_ms": 33,
+      "details": {
+        "total_objects": 2,
+        "pages_processed": 1
+      }
+    },
+    {
+      "name": "Bedrock Model Access",
+      "passed": false,
+      "error": "An error occurred (AccessDeniedException) when calling the InvokeModel operation: User: arn:aws:sts::122634724608:assumed-role/SageMakerGranite8BRole/SageMaker is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-1:122634724608:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0 because no identity-based policy allows the bedrock:InvokeModel action",
+      "duration_ms": 92,
+      "details": {
+        "traceback": "An error occurred (AccessDeniedException) when calling the InvokeModel operation: User: arn:aws:sts::122634724608:assumed-role/SageMakerGranite8BRole/SageMaker is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-1:122634724608:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0 because no identity-based policy allows the bedrock:InvokeModel action"
+      }
+    },
+    {
+      "name": "Bedrock Code Generation",
+      "passed": false,
+      "error": "An error occurred (AccessDeniedException) when calling the InvokeModel operation: User: arn:aws:sts::122634724608:assumed-role/SageMakerGranite8BRole/SageMaker is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-1:122634724608:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0 because no identity-based policy allows the bedrock:InvokeModel action",
+      "duration_ms": 64,
+      "details": {
+        "traceback": "An error occurred (AccessDeniedException) when calling the InvokeModel operation: User: arn:aws:sts::122634724608:assumed-role/SageMakerGranite8BRole/SageMaker is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-1:122634724608:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0 because no identity-based policy allows the bedrock:InvokeModel action"
+      }
+    },
+    {
+      "name": "Bedrock Rate Limit Handling",
+      "passed": true,
+      "error": null,
+      "duration_ms": 172,
+      "details": {
+        "requests_made": 3,
+        "successful": 0,
+        "throttled": 0,
+        "other_errors": 3
+      }
+    },
+    {
+      "name": "Quality Evaluator Init",
+      "passed": true,
+      "error": null,
+      "duration_ms": 17,
+      "details": {
+        "initialized": true,
+        "quality_threshold": 7.0,
+        "gcc_available": true
+      }
+    },
+    {
+      "name": "Quality Evaluator Scoring",
+      "passed": false,
+      "error": "argument of type 'int' is not iterable",
+      "duration_ms": 166,
+      "details": {
+        "traceback": "argument of type 'int' is not iterable"
+      }
+    },
+    {
+      "name": "Teacher Generator Init",
+      "passed": false,
+      "error": "No module named 'dotenv'",
+      "duration_ms": 11,
+      "details": {
+        "traceback": "No module named 'dotenv'"
+      }
+    },
+    {
+      "name": "Teacher Generator Response",
+      "passed": false,
+      "error": "No module named 'dotenv'",
+      "duration_ms": 2,
+      "details": {
+        "traceback": "No module named 'dotenv'"
+      }
+    },
+    {
+      "name": "Full Correction Flow",
+      "passed": false,
+      "error": "No module named 'dotenv'",
+      "duration_ms": 2,
+      "details": {
+        "traceback": "No module named 'dotenv'"
+      }
+    }
+  ]
+}

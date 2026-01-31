@@ -26,10 +26,12 @@ from datetime import datetime
 import boto3
 from sagemaker import Session
 from sagemaker.huggingface import HuggingFace
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+# Load environment variables (optional dependency)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, environment variables must be set externally
 
 
 def load_config(config_path: str = "config.yaml") -> dict:

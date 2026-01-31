@@ -31,10 +31,12 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from tqdm import tqdm
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+# Load environment variables (optional dependency)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, environment variables must be set externally
 
 
 class BedrockTeacherGenerator:

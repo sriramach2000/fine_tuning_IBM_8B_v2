@@ -1,0 +1,189 @@
+{
+  "total_tests": 13,
+  "passed": 13,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "duration_seconds": 22.618478,
+  "start_time": "2026-01-27T21:06:00.269312",
+  "end_time": "2026-01-27T21:06:22.887830",
+  "results": [
+    {
+      "name": "S3 Bucket Access",
+      "passed": true,
+      "error": null,
+      "duration_ms": 297,
+      "details": {
+        "bucket": "granite-8b-unified-automotive-data",
+        "status": "accessible"
+      }
+    },
+    {
+      "name": "S3 List Objects",
+      "passed": true,
+      "error": null,
+      "duration_ms": 100,
+      "details": {
+        "prefix": "data/",
+        "objects_found": 4,
+        "sample_keys": [
+          "data/processed/train.jsonl",
+          "data/processed/val.jsonl",
+          "data/splits/train.jsonl"
+        ]
+      }
+    },
+    {
+      "name": "S3 Read Training File",
+      "passed": true,
+      "error": null,
+      "duration_ms": 244,
+      "details": {
+        "file_key": "data/processed/train.jsonl",
+        "file_size": 72881,
+        "content_preview": "{\"messages\": [{\"role\": \"user\", \"content\": \"Create an implementation of 'ChronoToUE4Direction' follow"
+      }
+    },
+    {
+      "name": "S3 Write Permission",
+      "passed": true,
+      "error": null,
+      "duration_ms": 579,
+      "details": {
+        "test_key": "test-outputs/cloud-test-2026-01-27T21:06:00.911807.txt",
+        "written_bytes": 33,
+        "verified": true
+      }
+    },
+    {
+      "name": "S3 Pagination",
+      "passed": true,
+      "error": null,
+      "duration_ms": 118,
+      "details": {
+        "total_objects": 4,
+        "pages_processed": 1
+      }
+    },
+    {
+      "name": "Bedrock Model Access",
+      "passed": true,
+      "error": null,
+      "duration_ms": 1701,
+      "details": {
+        "model_id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "response_received": true,
+        "response_preview": "Hello",
+        "usage": {
+          "input_tokens": 17,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 4
+        }
+      }
+    },
+    {
+      "name": "Bedrock Code Generation",
+      "passed": true,
+      "error": null,
+      "duration_ms": 3479,
+      "details": {
+        "model_id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "contains_struct": true,
+        "contains_timestamp": true,
+        "response_length": 466,
+        "usage": {
+          "input_tokens": 22,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 158
+        }
+      }
+    },
+    {
+      "name": "Bedrock Rate Limit Handling",
+      "passed": true,
+      "error": null,
+      "duration_ms": 5238,
+      "details": {
+        "requests_made": 3,
+        "successful": 3,
+        "throttled": 0,
+        "other_errors": 0
+      }
+    },
+    {
+      "name": "Quality Evaluator Init",
+      "passed": true,
+      "error": null,
+      "duration_ms": 134,
+      "details": {
+        "initialized": true,
+        "quality_threshold": 7.0,
+        "gcc_available": true
+      }
+    },
+    {
+      "name": "Quality Evaluator Scoring",
+      "passed": true,
+      "error": null,
+      "duration_ms": 119,
+      "details": {
+        "good_code_score": 9.25,
+        "bad_code_score": 5.35,
+        "scoring_correct": true
+      }
+    },
+    {
+      "name": "Teacher Generator Init",
+      "passed": true,
+      "error": null,
+      "duration_ms": 8,
+      "details": {
+        "initialized": true,
+        "model_id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "max_tokens": 100
+      }
+    },
+    {
+      "name": "Teacher Generator Response",
+      "passed": true,
+      "error": null,
+      "duration_ms": 2919,
+      "details": {
+        "success": true,
+        "has_response": true,
+        "response_length": 434,
+        "usage": {
+          "input_tokens": 23,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 148
+        }
+      }
+    },
+    {
+      "name": "Full Correction Flow",
+      "passed": true,
+      "error": null,
+      "duration_ms": 7677,
+      "details": {
+        "student_score": 7.15,
+        "teacher_response_success": true,
+        "teacher_score": 6.1,
+        "improvement": -1.0500000000000007
+      }
+    }
+  ]
+}
