@@ -322,6 +322,32 @@ class AutomotiveDataPipeline:
 
         return examples
 
+    def process_embedded_data(self, files: List[str], domain: str, contexts: List[str]) -> List[Dict]:
+        """Generic processor for embedded/automotive code files."""
+        examples = []
+
+        for file_path in tqdm(files, desc=f"Processing {domain}"):
+            code = self.read_code_file(file_path)
+            if not code:
+                continue
+
+            lang = 'cpp' if file_path.endswith(('.cpp', '.cc', '.cxx')) else 'c'
+            functions = self.extract_functions(code, language=lang)
+
+            for func in functions:
+                context = random.choice(contexts)
+                example = self.generate_prompt_from_function(func, context)
+                example['metadata']['domain'] = domain
+                examples.append(example)
+
+            if len(code) > 200:
+                completion = self.generate_code_completion_prompt(code)
+                if completion:
+                    completion['metadata']['domain'] = domain
+                    examples.append(completion)
+
+        return examples
+
     def deduplicate(self, examples: List[Dict]) -> List[Dict]:
         """Remove duplicate examples based on content hash"""
         seen = set()
@@ -364,50 +390,177 @@ class AutomotiveDataPipeline:
 
         print(f"[DataPipeline] Saved {len(examples)} examples to {output_path}")
 
+    def _download_and_filter(self, prefix: str, extensions: tuple, max_files: int) -> List[str]:
+        """Download files from S3 prefix, filtered by extension."""
+        max_keys = max_files if max_files > 0 else 100000
+        objects = self.list_s3_objects(prefix, max_keys=max_keys)
+        if max_files > 0:
+            objects = objects[:max_files]
+
+        # Filter by extension first, then report
+        matching = [obj for obj in objects if obj['key'].endswith(extensions)]
+        total_size_mb = sum(obj['size'] for obj in matching) / 1e6
+        print(f"[DataPipeline] Found {len(matching)} files ({total_size_mb:.1f} MB) in {prefix}")
+
+        files = []
+        for obj in tqdm(matching, desc=f"Downloading {prefix}"):
+            local = self.download_file(obj['key'])
+            if local:
+                files.append(local)
+        return files
+
+    # All automotive data sources with their S3 prefixes, domain labels, and contexts
+    DATA_SOURCES = [
+        # TSN / AVB core
+        {"prefix": "tsn_data/", "domain": "tsn", "contexts": [
+            "Time-Sensitive Networking (TSN)", "IEEE 802.1Qbv Time-Aware Shaper",
+            "IEEE 802.1Qav Credit-Based Shaper", "IEEE 802.1AS Precision Time Protocol",
+            "TSN stream scheduling",
+        ]},
+        {"prefix": "avb_data/", "domain": "avb", "contexts": [
+            "Audio Video Bridging (AVB)", "AVB Stream Reservation Protocol",
+            "AVB audio streaming", "AVTP timestamp processing", "gPTP synchronization",
+        ]},
+        # CARLA simulator
+        {"prefix": "advanced_academic/carla_autonomous_driving_simulator/", "domain": "carla", "contexts": [
+            "CARLA autonomous driving simulator", "vehicle control system",
+            "sensor data processing", "autonomous vehicle perception",
+            "vehicle physics simulation",
+        ]},
+        # Embedded systems
+        {"prefix": "advanced_embedded/", "domain": "embedded", "contexts": [
+            "embedded automotive systems", "bare-metal firmware",
+            "hardware abstraction layer", "peripheral driver development",
+            "embedded C real-time systems",
+        ]},
+        {"prefix": "phase_2_embedded/", "domain": "embedded_p2", "contexts": [
+            "embedded automotive firmware", "MCU peripheral drivers",
+            "low-level hardware interface", "embedded systems programming",
+        ]},
+        {"prefix": "phase_3_embedded/", "domain": "embedded_p3", "contexts": [
+            "production embedded firmware", "automotive ECU software",
+            "embedded C safety-critical code", "vehicle embedded controller",
+        ]},
+        # RTOS
+        {"prefix": "advanced_rtos/", "domain": "rtos", "contexts": [
+            "real-time operating system", "FreeRTOS task management",
+            "RTOS scheduling algorithms", "automotive RTOS development",
+            "real-time task synchronization",
+        ]},
+        {"prefix": "phase_2_rtos/", "domain": "rtos_p2", "contexts": [
+            "FreeRTOS automotive application", "RTOS queue management",
+            "real-time interrupt handling", "RTOS memory management",
+        ]},
+        {"prefix": "phase_3_rtos/", "domain": "rtos_p3", "contexts": [
+            "production RTOS firmware", "automotive real-time scheduler",
+            "RTOS semaphore and mutex patterns",
+        ]},
+        {"prefix": "nxp_automotive_freertos/", "domain": "nxp_freertos", "contexts": [
+            "NXP automotive FreeRTOS", "NXP S32K MCU firmware",
+            "NXP automotive BSP", "NXP real-time driver",
+        ]},
+        {"prefix": "nxp_s32k_freertos_bsp/", "domain": "nxp_bsp", "contexts": [
+            "NXP S32K board support package", "NXP FreeRTOS BSP drivers",
+            "NXP automotive peripheral initialization", "NXP MCU startup code",
+        ]},
+        {"prefix": "car_freertos_example/", "domain": "car_freertos", "contexts": [
+            "automotive FreeRTOS example", "vehicle ECU FreeRTOS application",
+        ]},
+        # Middleware
+        {"prefix": "advanced_middleware/", "domain": "middleware", "contexts": [
+            "automotive middleware", "SOME/IP communication",
+            "CommonAPI service framework", "vehicle service-oriented architecture",
+        ]},
+        {"prefix": "phase_2_middleware/", "domain": "middleware_p2", "contexts": [
+            "automotive middleware stack", "inter-ECU communication",
+            "vehicle middleware services", "automotive IPC framework",
+        ]},
+        {"prefix": "covesa_commonapi_core_tools/", "domain": "covesa", "contexts": [
+            "COVESA CommonAPI tools", "GENIVI middleware framework",
+            "automotive service interface", "CommonAPI code generation",
+        ]},
+        {"prefix": "genivi_candevstudio/", "domain": "genivi", "contexts": [
+            "GENIVI CAN development studio", "CAN bus protocol tools",
+            "automotive CAN interface", "vehicle network diagnostics",
+        ]},
+        # Safety
+        {"prefix": "advanced_safety/", "domain": "safety", "contexts": [
+            "functional safety ISO 26262", "ASIL-compliant code",
+            "safety-critical automotive software", "MISRA C compliance",
+        ]},
+        {"prefix": "phase_3_safety/", "domain": "safety_p3", "contexts": [
+            "production safety-critical code", "ISO 26262 compliant implementation",
+            "automotive safety monitoring", "fault-tolerant vehicle software",
+        ]},
+        {"prefix": "functional_safety_examples/", "domain": "func_safety", "contexts": [
+            "functional safety examples", "safety pattern implementation",
+            "redundancy and fault detection",
+        ]},
+        # AUTOSAR
+        {"prefix": "autosar_learning_project/", "domain": "autosar", "contexts": [
+            "AUTOSAR Classic Platform", "AUTOSAR software component",
+            "AUTOSAR RTE interface", "AUTOSAR BSW module",
+        ]},
+        # Academic / research
+        {"prefix": "phase_2_academic/", "domain": "academic_p2", "contexts": [
+            "automotive research code", "vehicle systems academic implementation",
+            "automotive protocol reference",
+        ]},
+        {"prefix": "phase_3_academic/", "domain": "academic_p3", "contexts": [
+            "advanced automotive research", "vehicle systems algorithm",
+            "automotive academic reference implementation",
+        ]},
+        # Vehicle security
+        {"prefix": "awesome_vehicle_security/", "domain": "security", "contexts": [
+            "vehicle security", "automotive cybersecurity",
+            "CAN bus security", "vehicle intrusion detection",
+        ]},
+    ]
+
     def run_pipeline(
         self,
         download_data: bool = True,
         max_files_per_type: int = 100,
         train_ratio: float = 0.9
     ):
-        """Run the full data pipeline"""
+        """Run the full data pipeline across all automotive data sources."""
         print("\n" + "="*70)
         print("[DataPipeline] Starting Automotive Data Pipeline")
+        print(f"[DataPipeline] Processing {len(self.DATA_SOURCES)} data sources")
         print("="*70)
 
         all_examples = []
+        source_stats = {}
 
         if download_data:
-            # Download TSN data
-            print("\n[DataPipeline] Processing TSN data...")
-            tsn_objects = self.list_s3_objects("tsn_data/", max_keys=max_files_per_type)
-            tsn_files = []
-            for obj in tsn_objects[:max_files_per_type]:
-                if obj['key'].endswith(('.c', '.h', '.cpp', '.txt')):
-                    local = self.download_file(obj['key'])
-                    if local:
-                        tsn_files.append(local)
+            code_extensions = ('.c', '.h', '.cpp', '.cc', '.cxx', '.txt')
 
-            tsn_examples = self.process_tsn_data(tsn_files)
-            all_examples.extend(tsn_examples)
-            print(f"[DataPipeline] TSN examples: {len(tsn_examples)}")
+            for source in self.DATA_SOURCES:
+                prefix = source['prefix']
+                domain = source['domain']
+                contexts = source['contexts']
 
-            # Download CARLA data (sample)
-            print("\n[DataPipeline] Processing CARLA data...")
-            carla_objects = self.list_s3_objects(
-                "advanced_academic/carla_autonomous_driving_simulator/",
-                max_keys=max_files_per_type
-            )
-            carla_files = []
-            for obj in carla_objects[:max_files_per_type]:
-                if obj['key'].endswith(('.cpp', '.h')):
-                    local = self.download_file(obj['key'])
-                    if local:
-                        carla_files.append(local)
+                print(f"\n[DataPipeline] [{domain}] Downloading from {prefix}...")
+                files = self._download_and_filter(prefix, code_extensions, max_files_per_type)
 
-            carla_examples = self.process_carla_data(carla_files)
-            all_examples.extend(carla_examples)
-            print(f"[DataPipeline] CARLA examples: {len(carla_examples)}")
+                if not files:
+                    print(f"[DataPipeline] [{domain}] No files found, skipping")
+                    source_stats[domain] = 0
+                    continue
+
+                examples = self.process_embedded_data(files, domain, contexts)
+                all_examples.extend(examples)
+                source_stats[domain] = len(examples)
+                print(f"[DataPipeline] [{domain}] {len(examples)} examples from {len(files)} files")
+
+        # Print summary by source
+        print("\n" + "-"*70)
+        print("[DataPipeline] Examples by source:")
+        for domain, count in sorted(source_stats.items(), key=lambda x: -x[1]):
+            if count > 0:
+                print(f"  {domain:25s} {count:>6,}")
+        print(f"  {'TOTAL (before dedup)':25s} {len(all_examples):>6,}")
+        print("-"*70)
 
         # Deduplicate
         all_examples = self.deduplicate(all_examples)
